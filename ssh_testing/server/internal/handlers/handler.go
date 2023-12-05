@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
@@ -47,8 +48,7 @@ func handleSSHSession(channel ssh.Channel) {
 		_ = channel.Close()
 	}(channel)
 
-	_, _ = fmt.Fprintf(channel, "Welcome to vis SSH server!")
-	_, _ = fmt.Fprintf(channel, "\n\r")
+	_, _ = fmt.Fprintf(channel, "Welcome to vis SSH server!\n\r")
 
 	terminal := term.NewTerminal(channel, "> ")
 
@@ -59,25 +59,61 @@ func handleSSHSession(channel ssh.Channel) {
 			break
 		}
 
-		response := handler(line)
-
-		if response != "" {
-			_, _ = fmt.Fprintf(channel, response)
-			_, _ = fmt.Fprintf(channel, "\n\r")
+		if handler(channel, line) != nil {
+			log.Printf("error in handler %e", err)
+		} else {
+			_, _ = fmt.Fprintf(channel, "handle %s success\n\r", line)
 		}
 	}
+	_, _ = fmt.Fprintf(channel, "closing session")
+
 }
 
-// TODO: обрабатываю команды
-func handler(command string) string {
+func handler(channel ssh.Channel, command string) error {
 	switch command {
-	case "exit":
-		return "Goodbye!"
-	case "start vis":
-		return "Starting vis..."
+	case "start bin":
+		return handleRun(channel)
 	case "push bin":
-		return "Pushing binary..."
+		return handlePutBin(channel)
+	case "exit":
+		return handleExit(channel)
 	default:
-		return "Unknown command: " + command
+		_, _ = fmt.Fprintf(channel, "Unknown command: %s\n\r", command)
 	}
+
+	return nil
+}
+
+func handleRun(channel ssh.Channel) error {
+	_, _ = fmt.Fprintf(channel, "Run visualisator\n\r")
+	if err := execBinFile(); err != nil {
+		return fmt.Errorf("failed to exec bin %w", err)
+	}
+	return nil
+}
+
+// TODO: реализовать запуск бинарного файла -> path в конфиге
+func execBinFile() error {
+	// Путь к бинарнику возьму из конфига
+	return nil
+}
+
+func handlePutBin(channel ssh.Channel) error {
+	_, _ = fmt.Fprintf(channel, "Upload binary to remoute server\n\r")
+	if err := uploadFileToServer(); err != nil {
+		return fmt.Errorf("failed to upload bin %w", err)
+	}
+	return nil
+}
+
+// TODO: реализовать загрузку
+func uploadFileToServer() error {
+	// Путь к бинарнику возьму из конфига
+	return nil
+}
+
+func handleExit(channel ssh.Channel) error {
+	_, _ = fmt.Fprintf(channel, "Stoping server\n\r")
+	os.Exit(0)
+	return nil
 }
