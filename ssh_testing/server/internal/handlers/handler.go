@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/creack/pty"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/term"
+	"io"
 	"log"
 	"net"
 	"os"
-
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/term"
+	"os/exec"
 )
 
 func HandleSSHConnection(conn net.Conn, config *ssh.ServerConfig) {
@@ -59,8 +61,8 @@ func handleSSHSession(channel ssh.Channel) {
 			break
 		}
 
-		if handler(channel, line) != nil {
-			log.Printf("error in handler %e", err)
+		if errH := handler(channel, line); errH != nil {
+			log.Printf("error in handler %+v", errH)
 		} else {
 			_, _ = fmt.Fprintf(channel, "handle %s success\n\r", line)
 		}
@@ -71,10 +73,8 @@ func handleSSHSession(channel ssh.Channel) {
 
 func handler(channel ssh.Channel, command string) error {
 	switch command {
-	case "start bin":
-		return handleRun(channel)
-	case "push bin":
-		return handlePutBin(channel)
+	case "tmux":
+		return handleTmux(channel)
 	case "exit":
 		return handleExit(channel)
 	default:
@@ -84,31 +84,37 @@ func handler(channel ssh.Channel, command string) error {
 	return nil
 }
 
-func handleRun(channel ssh.Channel) error {
-	_, _ = fmt.Fprintf(channel, "Run visualisator\n\r")
-	if err := execBinFile(); err != nil {
-		return fmt.Errorf("failed to exec bin %w", err)
-	}
-	return nil
-}
-
-// TODO: реализовать запуск бинарного файла -> path в конфиге
-func execBinFile() error {
-	// Путь к бинарнику возьму из конфига
-	return nil
-}
-
-func handlePutBin(channel ssh.Channel) error {
+func handleTmux(channel ssh.Channel) error {
 	_, _ = fmt.Fprintf(channel, "Upload binary to remoute server\n\r")
-	if err := uploadFileToServer(); err != nil {
+	if err := startTmux(channel); err != nil {
 		return fmt.Errorf("failed to upload bin %w", err)
 	}
 	return nil
 }
 
-// TODO: реализовать загрузку
-func uploadFileToServer() error {
-	// Путь к бинарнику возьму из конфига
+func startTmux(channel ssh.Channel) error {
+	cmd := exec.Command("tmux")
+
+	ptmx, errS := pty.Start(cmd)
+	if errS != nil {
+		return fmt.Errorf("failed to start tmux: %v", errS)
+	}
+	defer func(ptmx *os.File) {
+		_ = ptmx.Close()
+	}(ptmx)
+
+	go func() {
+		_, _ = io.Copy(channel, ptmx)
+	}()
+
+	go func() {
+		_, _ = io.Copy(ptmx, channel)
+	}()
+
+	if errW := cmd.Wait(); errW != nil {
+		return fmt.Errorf("tmux failed: %v", errW)
+	}
+
 	return nil
 }
 
