@@ -3,6 +3,8 @@ package internal
 import (
 	"log"
 	"net"
+
+	"github.com/VyacheslavIsWorkingNow/siv/ssh_testing/server/internal/handlers"
 )
 
 func RunServer() {
@@ -32,6 +34,6 @@ func RunServer() {
 			continue
 		}
 
-		go handleSSHConnection(conn, config)
+		go handlers.HandleSSHConnection(conn, config)
 	}
 }

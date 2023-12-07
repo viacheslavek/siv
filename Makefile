@@ -1,17 +1,17 @@
 all:
 
-.PHONY: build_server
-build_server:
-	echo "build server"
+.PHONY: run_server
+run_server:
+	cd ssh_testing/server && go run cmd/server.go
+
+.PHONY: run_client
+run_client:
+	cd ssh_testing/client && go run cmd/client.go
 
 .PHONY: build_visualizer
 build_visualizer:
 	echo "build visualizer"
 
-.PHONY: run_server
-run_server:
-	echo "run server"
-
-.PHONY: upload_bin
-upload_bin:
-	echo "upload_bin"
+.PHONY: run_visualizer
+run_visualizer:
+	echo "run visualizer"
