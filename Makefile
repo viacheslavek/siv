@@ -10,8 +10,8 @@ run_client:
 
 .PHONY: build_visualizer
 build_visualizer:
-	echo "build visualizer"
+	"/Users/slavaruswarrior/Applications/CLion 2023.2.2.app/Contents/bin/cmake/mac/bin/cmake" --build /Users/slavaruswarrior/Documents/GitHub/siv/visualizer/cmake-build-debug --target ConsoleGraph -j 6
 
 .PHONY: run_visualizer
 run_visualizer:
-	echo "run visualizer"
+	./visualizer/cmake-build-debug/ConsoleGraph < ./visualizer/visfifo
