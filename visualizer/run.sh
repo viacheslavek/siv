@@ -1,3 +1,7 @@
 #!/bin/bash
 
-echo "Hello, world!"
+# Имя именованного канала
+fifo="./visfifo"
+
+# Создаем именованный канал
+mkfifo "$fifo"
